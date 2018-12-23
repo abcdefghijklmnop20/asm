@@ -1,0 +1,555 @@
+     1                                  
+     2                                  ; Assembly program to calculate the  Factorial of n
+     3                                  ; Author:  Maryam Katebzedeh
+     4                                  ; Homework 5
+     5                                  ; Shiraz University
+     6                                  ; Date:    24 Azar 1397
+     7                                  
+     8                                  %include "io.h"           ; header file for input/output
+     1                              <1> ;  This file should be attached to NASM assembly programs
+     2                              <1> ; Author:  Gh. Dastghaibyfard dstghaib@shirazu.ac.ir
+     3                              <1> ;(Shiraz University)
+     4                              <1> ; Date:    25 Shahrivar 1397,  
+     5                              <1> ; To Compile, Link and Execute see readme.txt file
+     6                              <1> 		extern  itoaproc, atoiproc, dtoaproc, atodproc
+     7                              <1> 
+     8                              <1> %macro		itoa   2	;; dest,source   convert integer to ASCII string
+     9                              <1>             push   ebx          ;; save EBX
+    10                              <1>             mov    bx,%2		;;
+    11                              <1>             push   bx           ;; source parameter
+    12                              <1>             mov    ebx,%1       ;; destination address
+    13                              <1>             push   ebx          ;; destination parameter
+    14                              <1>             call   itoaproc     ;; call itoaproc(source,dest)
+    15                              <1>             pop    ebx          ;; restore EBX
+    16                              <1> %endmacro
+    17                              <1> 
+    18                              <1> %macro		atoi  1 	;;  source;; convert ASCII string to integer in AX
+    19                              <1>                                 ;; offset of terminating character in ESI
+    20                              <1>             push   ebx          ;; save EBX
+    21                              <1>             mov    ebx,%1  		;; source address to EBX
+    22                              <1>             push   ebx          ;; source parameter on stack
+    23                              <1>             call   atoiproc     ;; call atoiproc(source)
+    24                              <1>             pop    ebx          ;; parameter removed by ret
+    25                              <1> %endmacro
+    26                              <1> 
+    27                              <1> %macro		dtoa   2    ;; dest,source   ;; convert double to ASCII string
+    28                              <1>             push   ebx      ;; save EBX
+    29                              <1>             mov    ebx,%2
+    30                              <1>             push   ebx      ;; source parameter
+    31                              <1>             mov    ebx,%1   ;; destination address
+    32                              <1>             push   ebx      ;; destination parameter
+    33                              <1>             call   dtoaproc ;; call dtoaproc(source,dest)
+    34                              <1>             pop    ebx      ;; restore EBX
+    35                              <1> %endmacro
+    36                              <1> 
+    37                              <1> %macro	atod        1 	;;source;; convert ASCII string to integer in EAX
+    38                              <1>                               ;; offset of terminating character in ESI
+    39                              <1>             mov   eax,%1	  ;; source address to EAX
+    40                              <1>             push   eax        ;; source parameter on stack
+    41                              <1>             call   atodproc   ;; call atodproc(source)
+    42                              <1>                               ;; parameter removed by ret
+    43                              <1> %endmacro
+    44                              <1> 
+    45                              <1> 	; print a string
+    46                              <1> %macro output 2
+    47                              <1>   pushad
+    48                              <1>   mov eax, 4	;; FILE PRINT SERVICE
+    49                              <1>   mov ebx, 1	;; 1 = STD OUTPUT (MONITOR)
+    50                              <1>   mov ecx, %1	;; POINTER TO OUTPUT BUFFER
+    51                              <1>   mov edx, [%2]	;; OUTPUT BUFFER SIZE --->%2IF NOT EQU PROBLEM????
+    52                              <1>   int 80h
+    53                              <1>   popad
+    54                              <1> %endmacro
+    55                              <1> 
+    56                              <1> %macro output 1
+    57                              <1>   pushad
+    58                              <1>   mov esi, %1
+    59                              <1> 
+    60                              <1> %%for:
+    61                              <1>   mov eax, 4	;; FILE PRINT SERVICE
+    62                              <1>   mov ebx, 1	;; 1 = STD OUTPUT (MONITOR)
+    63                              <1>   mov ecx, esi
+    64                              <1>   mov edx, 1	;; OUTPUT BUFFER SIZE --->%2IF NOT EQU PROBLEM????
+    65                              <1>   cmp byte[ecx],0
+    66                              <1>   je  %%skip
+    67                              <1>   int 80h
+    68                              <1>   inc esi	
+    69                              <1>   jmp %%for 
+    70                              <1> 
+    71                              <1> %%skip:
+    72                              <1>   popad
+    73                              <1> %endmacro
+    74                              <1> 
+    75                              <1> 	; READ A STRING
+    76                              <1> %macro input 2   ;; str, max len
+    77                              <1> 	PUSHAD	
+    78                              <1> 	PUSHF
+    79                              <1> 	MOV EAX,3 	;; FILE READ SERVICE
+    80                              <1> 	MOV EBX,0  	;; 0 = STD INPUT(KEYBOARD)
+    81                              <1> 	MOV ECX,%1  ;; POINTER TO INPUT BUFFER
+    82                              <1> 	MOV EDX,%2 	;; INPUT BUFFER SIZE
+    83                              <1> 	INT 0X80	
+    84                              <1> 	DEC EAX
+    85                              <1> ;	MOV [%3],EAX ; LENGTH OF STRING READ
+    86                              <1> 	MOV BYTE[ECX+EAX], 0 ; NULL POINTER
+    87                              <1> 	POPF
+    88                              <1> 	POPAD
+    89                              <1> %endmacro
+     9                                  
+    10                                  %macro fgets 2   ;; str, max len
+    11                                  	PUSHAD
+    12                                  	PUSHF
+    13                                  	MOV EAX,3 	;; FILE READ SERVICE
+    14                                  	MOV EBX,0  	;; 0 = STD INPUT(KEYBOARD)
+    15                                  	MOV ECX,%1  ;; POINTER TO INPUT BUFFER
+    16                                  	MOV EDX,%2 	;; INPUT BUFFER SIZE
+    17                                  	INT 0X80
+    18                                  	DEC EAX
+    19                                  ;	MOV [%3],EAX ; LENGTH OF STRING READ
+    20                                  	MOV BYTE[ECX+EAX], 0 ; NULL POINTER
+    21                                  	POPF
+    22                                  	POPAD
+    23                                  %endmacro
+    24                                  
+    25                                  
+    26                                  %macro puts 1
+    27                                    pushad
+    28                                    mov esi, %1
+    29                                  
+    30                                  %%for:
+    31                                    mov eax, 4	;; FILE PRINT SERVICE
+    32                                    mov ebx, 1	;; 1 = STD OUTPUT (MONITOR)
+    33                                    mov ecx, esi
+    34                                    mov edx, 1	;; OUTPUT BUFFER SIZE --->%2IF NOT EQU PROBLEM????
+    35                                    cmp byte[ecx],0
+    36                                    je  %%skip
+    37                                    int 80h
+    38                                    inc esi
+    39                                    jmp %%for
+    40                                  
+    41                                  %%skip:
+    42                                    popad
+    43                                  %endmacro
+    44                                  
+    45                                  
+    46                                  
+    47                                  %macro  fact 2
+    48                                  %%set:
+    49                                    mov    eax ,1
+    50                                  	mov    ebx ,%1
+    51                                  %%factorial:
+    52                                  	cmp    ebx,1
+    53                                  	je     %%found
+    54                                  	imul   eax ,ebx
+    55                                  	dec    ebx
+    56                                  	jmp    %%factorial
+    57                                  %%found:
+    58                                    mov    %2,eax
+    59                                  %endmacro
+    60                                  
+    61                                  
+    62                                  %macro   digits 2
+    63                                      mov    eax ,%1
+    64                                  		mov    esi ,%1
+    65                                  		mov    ebx ,10
+    66                                  		mov    ecx , 0
+    67                                  
+    68                                  %%forr:
+    69                                      cmp    esi ,0
+    70                                      je     %%find
+    71                                  		mov    eax , esi
+    72                                      cdq
+    73                                  		idiv   ebx
+    74                                  		inc    ecx
+    75                                  		mov    esi,eax
+    76                                  		jmp    %%forr
+    77                                  %%find :
+    78                                      mov    %2,ecx
+    79                                  %endmacro
+    80                                  
+    81                                  segment .data
+    82                                  	cr					 equ					13     								     ; carriage return character
+    83                                  	lf					 equ					10     								     ; line feed
+    84 00000000 0D0A00                  	newln     	 db          cr,lf,0
+    85 00000003 20202000                	string 			 db					"   ",0
+    86 00000007 0D0A77656C636F6D65-     	welcome_msg  db  				cr,lf,"welcome to n! program......",0
+    86 00000010 20746F206E21207072-
+    86 00000019 6F6772616D2E2E2E2E-
+    86 00000022 2E2E00             
+    87 00000025 0D0A506C6561736520-       getn_msg		 db          cr,lf,"Please enter integer number n (2 ≤ n ≤ 12): ",0
+    87 0000002E 656E74657220696E74-
+    87 00000037 65676572206E756D62-
+    87 00000040 6572206E20283220E2-
+    87 00000049 89A4206E20E289A420-
+    87 00000052 3132293A2000       
+    88 00000058 0D0A4F6F6F6F70732C-     	error_msg    db          cr,lf,"Oooops,.........Invalid input ....... please try again : ",cr,lf,0
+    88 00000061 2E2E2E2E2E2E2E2E2E-
+    88 0000006A 496E76616C69642069-
+    88 00000073 6E707574202E2E2E2E-
+    88 0000007C 2E2E2E20706C656173-
+    88 00000085 652074727920616761-
+    88 0000008E 696E203A200D0A00   
+    89 00000096 00000000                	n            dd          0
+    90 0000009A 202020202020202020-     	result       db          "           !=            and has                  digits.",cr,lf,0
+    90 000000A3 2020213D2020202020-
+    90 000000AC 20202020202020616E-
+    90 000000B5 642068617320202020-
+    90 000000BE 202020202020202020-
+    90 000000C7 202020202064696769-
+    90 000000D0 74732E0D0A00       
+    91 000000D6 00000000                	nfact        dd          0
+    92 000000DA 00000000                	ndigits      dd          0
+    93 000000DE 446F20796F75207761-     	continue_msg db          "Do you want to continue (y/n) ? ",0
+    93 000000E7 6E7420746F20636F6E-
+    93 000000F0 74696E75652028792F-
+    93 000000F9 6E29203F2000       
+    94 000000FF 0D0A5468616E6B7320-     	end_msg1     db          cr,lf,"Thanks for using the n! program.",0
+    94 00000108 666F72207573696E67-
+    94 00000111 20746865206E212070-
+    94 0000011A 726F6772616D2E00   
+    95 00000122 0D0A596F7520747269-     	end_msg2     db          cr,lf,"You tried the program            times.",cr,lf,0
+    95 0000012B 656420746865207072-
+    95 00000134 6F6772616D20202020-
+    95 0000013D 202020202020202074-
+    95 00000146 696D65732E0D0A00   
+    96 0000014E 0D0A417574686F723A-     	msg_Auther          db          cr,lf,"Author:  Maryam Katebzedeh",cr,lf,0                           ;introduction
+    96 00000157 20204D617279616D20-
+    96 00000160 4B617465627A656465-
+    96 00000169 680D0A00           
+    97 0000016D 0D0A486F6D65776F72-     	mgs_homework        db          cr,lf,"Homework 5" ,cr,lf,0
+    97 00000176 6B20350D0A00       
+    98 0000017C 0D0A446174653A2020-     	msg_date            db          cr,lf,"Date:    24 Azar 1397",cr,lf,0
+    98 00000185 2020323420417A6172-
+    98 0000018E 20313339370D0A00   
+    99 00000196 0D0A417373656D626C-     	msg_explain         db          cr,lf,"Assembly programs using macros ",cr,lf,0
+    99 0000019F 792070726F6772616D-
+    99 000001A8 73207573696E67206D-
+    99 000001B1 6163726F73200D0A00 
+   100                                  
+   101                                  
+   102                                  
+   103                                  segment  .bss
+   104                                  
+   105                                  
+   106                                  segment .code   											; start of main program code
+   107                                  	global _start
+   108                                  _start:
+   109                                  
+   110 00000000 E807000000              	call main
+   111                                  
+   112                                  quit:
+   113                                  
+   114 00000005 B801000000                  mov	   eax, 1										; SYSTEM CALL NUMBER (SYS_EXIT)
+   115 0000000A CD80                        int    80h								      ; INTERRUPT FOR DOS SERVICES	; end of main
+   116                                  
+   117                                  
+   118                                  main:
+   119                                  		puts      msg_Auther                                          ; Output auther
+   119 0000000C 60                  <1>  pushad
+   119 0000000D BE[4E010000]        <1>  mov esi, %1
+   119                              <1> 
+   119                              <1> %%for:
+   119 00000012 B804000000          <1>  mov eax, 4
+   119 00000017 BB01000000          <1>  mov ebx, 1
+   119 0000001C 89F1                <1>  mov ecx, esi
+   119 0000001E BA01000000          <1>  mov edx, 1
+   119 00000023 803900              <1>  cmp byte[ecx],0
+   119 00000026 7405                <1>  je %%skip
+   119 00000028 CD80                <1>  int 80h
+   119 0000002A 46                  <1>  inc esi
+   119 0000002B EBE5                <1>  jmp %%for
+   119                              <1> 
+   119                              <1> %%skip:
+   119 0000002D 61                  <1>  popad
+   120                                  		puts      mgs_homework                                        ; output homework num
+   120 0000002E 60                  <1>  pushad
+   120 0000002F BE[6D010000]        <1>  mov esi, %1
+   120                              <1> 
+   120                              <1> %%for:
+   120 00000034 B804000000          <1>  mov eax, 4
+   120 00000039 BB01000000          <1>  mov ebx, 1
+   120 0000003E 89F1                <1>  mov ecx, esi
+   120 00000040 BA01000000          <1>  mov edx, 1
+   120 00000045 803900              <1>  cmp byte[ecx],0
+   120 00000048 7405                <1>  je %%skip
+   120 0000004A CD80                <1>  int 80h
+   120 0000004C 46                  <1>  inc esi
+   120 0000004D EBE5                <1>  jmp %%for
+   120                              <1> 
+   120                              <1> %%skip:
+   120 0000004F 61                  <1>  popad
+   121                                  		puts      msg_date                                            ; Output date
+   121 00000050 60                  <1>  pushad
+   121 00000051 BE[7C010000]        <1>  mov esi, %1
+   121                              <1> 
+   121                              <1> %%for:
+   121 00000056 B804000000          <1>  mov eax, 4
+   121 0000005B BB01000000          <1>  mov ebx, 1
+   121 00000060 89F1                <1>  mov ecx, esi
+   121 00000062 BA01000000          <1>  mov edx, 1
+   121 00000067 803900              <1>  cmp byte[ecx],0
+   121 0000006A 7405                <1>  je %%skip
+   121 0000006C CD80                <1>  int 80h
+   121 0000006E 46                  <1>  inc esi
+   121 0000006F EBE5                <1>  jmp %%for
+   121                              <1> 
+   121                              <1> %%skip:
+   121 00000071 61                  <1>  popad
+   122                                  		puts      msg_explain                                         ; Output explanation
+   122 00000072 60                  <1>  pushad
+   122 00000073 BE[96010000]        <1>  mov esi, %1
+   122                              <1> 
+   122                              <1> %%for:
+   122 00000078 B804000000          <1>  mov eax, 4
+   122 0000007D BB01000000          <1>  mov ebx, 1
+   122 00000082 89F1                <1>  mov ecx, esi
+   122 00000084 BA01000000          <1>  mov edx, 1
+   122 00000089 803900              <1>  cmp byte[ecx],0
+   122 0000008C 7405                <1>  je %%skip
+   122 0000008E CD80                <1>  int 80h
+   122 00000090 46                  <1>  inc esi
+   122 00000091 EBE5                <1>  jmp %%for
+   122                              <1> 
+   122                              <1> %%skip:
+   122 00000093 61                  <1>  popad
+   123                                  
+   124                                      puts		welcome_msg
+   124 00000094 60                  <1>  pushad
+   124 00000095 BE[07000000]        <1>  mov esi, %1
+   124                              <1> 
+   124                              <1> %%for:
+   124 0000009A B804000000          <1>  mov eax, 4
+   124 0000009F BB01000000          <1>  mov ebx, 1
+   124 000000A4 89F1                <1>  mov ecx, esi
+   124 000000A6 BA01000000          <1>  mov edx, 1
+   124 000000AB 803900              <1>  cmp byte[ecx],0
+   124 000000AE 7405                <1>  je %%skip
+   124 000000B0 CD80                <1>  int 80h
+   124 000000B2 46                  <1>  inc esi
+   124 000000B3 EBE5                <1>  jmp %%for
+   124                              <1> 
+   124                              <1> %%skip:
+   124 000000B5 61                  <1>  popad
+   125                                  
+   126 000000B6 66BD0100                		mov     bp ,1
+   127                                  
+   128                                  get_n:
+   129                                      puts		getn_msg
+   129 000000BA 60                  <1>  pushad
+   129 000000BB BE[25000000]        <1>  mov esi, %1
+   129                              <1> 
+   129                              <1> %%for:
+   129 000000C0 B804000000          <1>  mov eax, 4
+   129 000000C5 BB01000000          <1>  mov ebx, 1
+   129 000000CA 89F1                <1>  mov ecx, esi
+   129 000000CC BA01000000          <1>  mov edx, 1
+   129 000000D1 803900              <1>  cmp byte[ecx],0
+   129 000000D4 7405                <1>  je %%skip
+   129 000000D6 CD80                <1>  int 80h
+   129 000000D8 46                  <1>  inc esi
+   129 000000D9 EBE5                <1>  jmp %%for
+   129                              <1> 
+   129                              <1> %%skip:
+   129 000000DB 61                  <1>  popad
+   130                                  		fgets 	string,3
+   130 000000DC 60                  <1>  PUSHAD
+   130 000000DD 9C                  <1>  PUSHF
+   130 000000DE B803000000          <1>  MOV EAX,3
+   130 000000E3 BB00000000          <1>  MOV EBX,0
+   130 000000E8 B9[03000000]        <1>  MOV ECX,%1
+   130 000000ED BA03000000          <1>  MOV EDX,%2
+   130 000000F2 CD80                <1>  INT 0X80
+   130 000000F4 48                  <1>  DEC EAX
+   130                              <1> 
+   130 000000F5 C6040100            <1>  MOV BYTE[ECX+EAX], 0
+   130 000000F9 9D                  <1>  POPF
+   130 000000FA 61                  <1>  POPAD
+   131                                  		atod    string
+   131                              <1> 
+   131 000000FB B8[03000000]        <1>  mov eax,%1
+   131 00000100 50                  <1>  push eax
+   131 00000101 E8(00000000)        <1>  call atodproc
+   131                              <1> 
+   132 00000106 A3[96000000]            		mov     [n],EAX
+   133 0000010B 83F802                      cmp     eax,2
+   134 0000010E 7C0C                    		jl      error
+   135 00000110 83F80C                  		cmp     eax,12
+   136 00000113 7F07                    		jg      error
+   137 00000115 B901000000                  mov     ecx ,1
+   138 0000011A EB27                    		jmp     computing
+   139                                  error:
+   140                                      puts   error_msg
+   140 0000011C 60                  <1>  pushad
+   140 0000011D BE[58000000]        <1>  mov esi, %1
+   140                              <1> 
+   140                              <1> %%for:
+   140 00000122 B804000000          <1>  mov eax, 4
+   140 00000127 BB01000000          <1>  mov ebx, 1
+   140 0000012C 89F1                <1>  mov ecx, esi
+   140 0000012E BA01000000          <1>  mov edx, 1
+   140 00000133 803900              <1>  cmp byte[ecx],0
+   140 00000136 7405                <1>  je %%skip
+   140 00000138 CD80                <1>  int 80h
+   140 0000013A 46                  <1>  inc esi
+   140 0000013B EBE5                <1>  jmp %%for
+   140                              <1> 
+   140                              <1> %%skip:
+   140 0000013D 61                  <1>  popad
+   141 0000013E E977FFFFFF              		jmp    get_n
+   142                                  
+   143                                  computing:
+   144                                      fact   [n] ,[nfact]
+   144                              <1> %%set:
+   144 00000143 B801000000          <1>  mov eax ,1
+   144 00000148 8B1D[96000000]      <1>  mov ebx ,%1
+   144                              <1> %%factorial:
+   144 0000014E 83FB01              <1>  cmp ebx,1
+   144 00000151 7406                <1>  je %%found
+   144 00000153 0FAFC3              <1>  imul eax ,ebx
+   144 00000156 4B                  <1>  dec ebx
+   144 00000157 EBF5                <1>  jmp %%factorial
+   144                              <1> %%found:
+   144 00000159 A3[D6000000]        <1>  mov %2,eax
+   145                                  		dtoa   result,[n]
+   145 0000015E 53                  <1>  push ebx
+   145 0000015F 8B1D[96000000]      <1>  mov ebx,%2
+   145 00000165 53                  <1>  push ebx
+   145 00000166 BB[9A000000]        <1>  mov ebx,%1
+   145 0000016B 53                  <1>  push ebx
+   145 0000016C E8(00000000)        <1>  call dtoaproc
+   145 00000171 5B                  <1>  pop ebx
+   146                                  		dtoa   result+13,[nfact]
+   146 00000172 53                  <1>  push ebx
+   146 00000173 8B1D[D6000000]      <1>  mov ebx,%2
+   146 00000179 53                  <1>  push ebx
+   146 0000017A BB[A7000000]        <1>  mov ebx,%1
+   146 0000017F 53                  <1>  push ebx
+   146 00000180 E8(00000000)        <1>  call dtoaproc
+   146 00000185 5B                  <1>  pop ebx
+   147                                  		digits [nfact],[ndigits]
+   147 00000186 A1[D6000000]        <1>  mov eax ,%1
+   147 0000018B 8B35[D6000000]      <1>  mov esi ,%1
+   147 00000191 BB0A000000          <1>  mov ebx ,10
+   147 00000196 B900000000          <1>  mov ecx , 0
+   147                              <1> 
+   147                              <1> %%forr:
+   147 0000019B 83FE00              <1>  cmp esi ,0
+   147 0000019E 740A                <1>  je %%find
+   147 000001A0 89F0                <1>  mov eax , esi
+   147 000001A2 99                  <1>  cdq
+   147 000001A3 F7FB                <1>  idiv ebx
+   147 000001A5 41                  <1>  inc ecx
+   147 000001A6 89C6                <1>  mov esi,eax
+   147 000001A8 EBF1                <1>  jmp %%forr
+   147                              <1> %%find :
+   147 000001AA 890D[DA000000]      <1>  mov %2,ecx
+   148                                  		dtoa   result+32,[ndigits]
+   148 000001B0 53                  <1>  push ebx
+   148 000001B1 8B1D[DA000000]      <1>  mov ebx,%2
+   148 000001B7 53                  <1>  push ebx
+   148 000001B8 BB[BA000000]        <1>  mov ebx,%1
+   148 000001BD 53                  <1>  push ebx
+   148 000001BE E8(00000000)        <1>  call dtoaproc
+   148 000001C3 5B                  <1>  pop ebx
+   149                                  		puts   result
+   149 000001C4 60                  <1>  pushad
+   149 000001C5 BE[9A000000]        <1>  mov esi, %1
+   149                              <1> 
+   149                              <1> %%for:
+   149 000001CA B804000000          <1>  mov eax, 4
+   149 000001CF BB01000000          <1>  mov ebx, 1
+   149 000001D4 89F1                <1>  mov ecx, esi
+   149 000001D6 BA01000000          <1>  mov edx, 1
+   149 000001DB 803900              <1>  cmp byte[ecx],0
+   149 000001DE 7405                <1>  je %%skip
+   149 000001E0 CD80                <1>  int 80h
+   149 000001E2 46                  <1>  inc esi
+   149 000001E3 EBE5                <1>  jmp %%for
+   149                              <1> 
+   149                              <1> %%skip:
+   149 000001E5 61                  <1>  popad
+   150                                      puts   continue_msg
+   150 000001E6 60                  <1>  pushad
+   150 000001E7 BE[DE000000]        <1>  mov esi, %1
+   150                              <1> 
+   150                              <1> %%for:
+   150 000001EC B804000000          <1>  mov eax, 4
+   150 000001F1 BB01000000          <1>  mov ebx, 1
+   150 000001F6 89F1                <1>  mov ecx, esi
+   150 000001F8 BA01000000          <1>  mov edx, 1
+   150 000001FD 803900              <1>  cmp byte[ecx],0
+   150 00000200 7405                <1>  je %%skip
+   150 00000202 CD80                <1>  int 80h
+   150 00000204 46                  <1>  inc esi
+   150 00000205 EBE5                <1>  jmp %%for
+   150                              <1> 
+   150                              <1> %%skip:
+   150 00000207 61                  <1>  popad
+   151                                  		fgets  string,2
+   151 00000208 60                  <1>  PUSHAD
+   151 00000209 9C                  <1>  PUSHF
+   151 0000020A B803000000          <1>  MOV EAX,3
+   151 0000020F BB00000000          <1>  MOV EBX,0
+   151 00000214 B9[03000000]        <1>  MOV ECX,%1
+   151 00000219 BA02000000          <1>  MOV EDX,%2
+   151 0000021E CD80                <1>  INT 0X80
+   151 00000220 48                  <1>  DEC EAX
+   151                              <1> 
+   151 00000221 C6040100            <1>  MOV BYTE[ECX+EAX], 0
+   151 00000225 9D                  <1>  POPF
+   151 00000226 61                  <1>  POPAD
+   152 00000227 803D[03000000]79        		cmp    byte[string],'y'
+   153 0000022E 7402                    		je     increment
+   154 00000230 EB07                    		jmp    end_of_program
+   155                                  
+   156                                  increment:
+   157 00000232 6645                        inc    bp
+   158 00000234 E981FEFFFF              		jmp    get_n
+   159                                  
+   160                                  
+   161                                  end_of_program:
+   162                                     puts   end_msg1
+   162 00000239 60                  <1>  pushad
+   162 0000023A BE[FF000000]        <1>  mov esi, %1
+   162                              <1> 
+   162                              <1> %%for:
+   162 0000023F B804000000          <1>  mov eax, 4
+   162 00000244 BB01000000          <1>  mov ebx, 1
+   162 00000249 89F1                <1>  mov ecx, esi
+   162 0000024B BA01000000          <1>  mov edx, 1
+   162 00000250 803900              <1>  cmp byte[ecx],0
+   162 00000253 7405                <1>  je %%skip
+   162 00000255 CD80                <1>  int 80h
+   162 00000257 46                  <1>  inc esi
+   162 00000258 EBE5                <1>  jmp %%for
+   162                              <1> 
+   162                              <1> %%skip:
+   162 0000025A 61                  <1>  popad
+   163                                  	 itoa   end_msg2+25,bp
+   163 0000025B 53                  <1>  push ebx
+   163 0000025C 6689EB              <1>  mov bx,%2
+   163 0000025F 6653                <1>  push bx
+   163 00000261 BB[3B010000]        <1>  mov ebx,%1
+   163 00000266 53                  <1>  push ebx
+   163 00000267 E8(00000000)        <1>  call itoaproc
+   163 0000026C 5B                  <1>  pop ebx
+   164                                  	 puts		end_msg2
+   164 0000026D 60                  <1>  pushad
+   164 0000026E BE[22010000]        <1>  mov esi, %1
+   164                              <1> 
+   164                              <1> %%for:
+   164 00000273 B804000000          <1>  mov eax, 4
+   164 00000278 BB01000000          <1>  mov ebx, 1
+   164 0000027D 89F1                <1>  mov ecx, esi
+   164 0000027F BA01000000          <1>  mov edx, 1
+   164 00000284 803900              <1>  cmp byte[ecx],0
+   164 00000287 7405                <1>  je %%skip
+   164 00000289 CD80                <1>  int 80h
+   164 0000028B 46                  <1>  inc esi
+   164 0000028C EBE5                <1>  jmp %%for
+   164                              <1> 
+   164                              <1> %%skip:
+   164 0000028E 61                  <1>  popad
+   165                                  
+   166                                  
+   167 0000028F C3                         ret

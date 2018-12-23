@@ -1,0 +1,209 @@
+     1                                  
+     2                                  ; Assembly program to calculate the  Factorial of n
+     3                                  ; Author:  Maryam Katebzedeh
+     4                                  ; Homework 5
+     5                                  ; Shiraz University
+     6                                  ; Date:    24 Azar 1397
+     7                                  
+     8                                  %include "io.h"           ; header file for input/output
+     1                              <1> ;  This file should be attached to NASM assembly programs
+     2                              <1> ; Author:  Gh. Dastghaibyfard dstghaib@shirazu.ac.ir
+     3                              <1> ;(Shiraz University)
+     4                              <1> ; Date:    25 Shahrivar 1397,  
+     5                              <1> ; To Compile, Link and Execute see readme.txt file
+     6                              <1> 		extern  itoaproc, atoiproc, dtoaproc, atodproc
+     7                              <1> 
+     8                              <1> %macro		itoa   2	;; dest,source   convert integer to ASCII string
+     9                              <1>             push   ebx          ;; save EBX
+    10                              <1>             mov    bx,%2		;;
+    11                              <1>             push   bx           ;; source parameter
+    12                              <1>             mov    ebx,%1       ;; destination address
+    13                              <1>             push   ebx          ;; destination parameter
+    14                              <1>             call   itoaproc     ;; call itoaproc(source,dest)
+    15                              <1>             pop    ebx          ;; restore EBX
+    16                              <1> %endmacro
+    17                              <1> 
+    18                              <1> %macro		atoi  1 	;;  source;; convert ASCII string to integer in AX
+    19                              <1>                                 ;; offset of terminating character in ESI
+    20                              <1>             push   ebx          ;; save EBX
+    21                              <1>             mov    ebx,%1  		;; source address to EBX
+    22                              <1>             push   ebx          ;; source parameter on stack
+    23                              <1>             call   atoiproc     ;; call atoiproc(source)
+    24                              <1>             pop    ebx          ;; parameter removed by ret
+    25                              <1> %endmacro
+    26                              <1> 
+    27                              <1> %macro		dtoa   2    ;; dest,source   ;; convert double to ASCII string
+    28                              <1>             push   ebx      ;; save EBX
+    29                              <1>             mov    ebx,%2
+    30                              <1>             push   ebx      ;; source parameter
+    31                              <1>             mov    ebx,%1   ;; destination address
+    32                              <1>             push   ebx      ;; destination parameter
+    33                              <1>             call   dtoaproc ;; call dtoaproc(source,dest)
+    34                              <1>             pop    ebx      ;; restore EBX
+    35                              <1> %endmacro
+    36                              <1> 
+    37                              <1> %macro	atod        1 	;;source;; convert ASCII string to integer in EAX
+    38                              <1>                               ;; offset of terminating character in ESI
+    39                              <1>             mov   eax,%1	  ;; source address to EAX
+    40                              <1>             push   eax        ;; source parameter on stack
+    41                              <1>             call   atodproc   ;; call atodproc(source)
+    42                              <1>                               ;; parameter removed by ret
+    43                              <1> %endmacro
+    44                              <1> 
+    45                              <1> 	; print a string
+    46                              <1> %macro output 2
+    47                              <1>   pushad
+    48                              <1>   mov eax, 4	;; FILE PRINT SERVICE
+    49                              <1>   mov ebx, 1	;; 1 = STD OUTPUT (MONITOR)
+    50                              <1>   mov ecx, %1	;; POINTER TO OUTPUT BUFFER
+    51                              <1>   mov edx, [%2]	;; OUTPUT BUFFER SIZE --->%2IF NOT EQU PROBLEM????
+    52                              <1>   int 80h
+    53                              <1>   popad
+    54                              <1> %endmacro
+    55                              <1> 
+    56                              <1> %macro output 1
+    57                              <1>   pushad
+    58                              <1>   mov esi, %1
+    59                              <1> 
+    60                              <1> %%for:
+    61                              <1>   mov eax, 4	;; FILE PRINT SERVICE
+    62                              <1>   mov ebx, 1	;; 1 = STD OUTPUT (MONITOR)
+    63                              <1>   mov ecx, esi
+    64                              <1>   mov edx, 1	;; OUTPUT BUFFER SIZE --->%2IF NOT EQU PROBLEM????
+    65                              <1>   cmp byte[ecx],0
+    66                              <1>   je  %%skip
+    67                              <1>   int 80h
+    68                              <1>   inc esi	
+    69                              <1>   jmp %%for 
+    70                              <1> 
+    71                              <1> %%skip:
+    72                              <1>   popad
+    73                              <1> %endmacro
+    74                              <1> 
+    75                              <1> 	; READ A STRING
+    76                              <1> %macro input 2   ;; str, max len
+    77                              <1> 	PUSHAD	
+    78                              <1> 	PUSHF
+    79                              <1> 	MOV EAX,3 	;; FILE READ SERVICE
+    80                              <1> 	MOV EBX,0  	;; 0 = STD INPUT(KEYBOARD)
+    81                              <1> 	MOV ECX,%1  ;; POINTER TO INPUT BUFFER
+    82                              <1> 	MOV EDX,%2 	;; INPUT BUFFER SIZE
+    83                              <1> 	INT 0X80	
+    84                              <1> 	DEC EAX
+    85                              <1> ;	MOV [%3],EAX ; LENGTH OF STRING READ
+    86                              <1> 	MOV BYTE[ECX+EAX], 0 ; NULL POINTER
+    87                              <1> 	POPF
+    88                              <1> 	POPAD
+    89                              <1> %endmacro
+     9                                  
+    10                                  
+    11                                  segment .data
+    12                                  	cr					 equ					13     								     ; carriage return character
+    13                                  	lf					 equ					10     								     ; line feed
+    14 00000000 0D0A00                  	newln     	 db          cr,lf,0
+    15 00000003 20<rept>                  string       times 			155 db ' '
+    16                                    
+    17                                  
+    18                                  
+    19                                  segment  .bss
+    20 00000000 <res 000000A0>          arr 	resd	40
+    21                                  
+    22                                  segment .code   											; start of main program code
+    23                                  	global _start
+    24                                  _start:
+    25                                  
+    26 00000000 E807000000              	call main
+    27                                  
+    28                                  quit:
+    29                                  
+    30 00000005 B801000000                  mov	   eax, 1										; SYSTEM CALL NUMBER (SYS_EXIT)
+    31 0000000A CD80                        int    80h								      ; INTERRUPT FOR DOS SERVICES	; end of main
+    32                                  
+    33                                  
+    34                                  main:
+    35                                  	 input string ,153
+    35 0000000C 60                  <1>  PUSHAD
+    35 0000000D 9C                  <1>  PUSHF
+    35 0000000E B803000000          <1>  MOV EAX,3
+    35 00000013 BB00000000          <1>  MOV EBX,0
+    35 00000018 B9[03000000]        <1>  MOV ECX,%1
+    35 0000001D BA99000000          <1>  MOV EDX,%2
+    35 00000022 CD80                <1>  INT 0X80
+    35 00000024 48                  <1>  DEC EAX
+    35                              <1> 
+    35 00000025 C6040100            <1>  MOV BYTE[ECX+EAX], 0
+    35 00000029 9D                  <1>  POPF
+    35 0000002A 61                  <1>  POPAD
+    36 0000002B BB00000000              	 mov   ebx , 0
+    37 00000030 C783[00000000]-         	 mov   dword[arr+ebx],string
+    37 00000036 [03000000]         
+    38                                  	 output dword[arr]
+    38 0000003A 60                  <1>  pushad
+    38 0000003B 8B35[00000000]      <1>  mov esi, %1
+    38                              <1> 
+    38                              <1> %%for:
+    38 00000041 B804000000          <1>  mov eax, 4
+    38 00000046 BB01000000          <1>  mov ebx, 1
+    38 0000004B 89F1                <1>  mov ecx, esi
+    38 0000004D BA01000000          <1>  mov edx, 1
+    38 00000052 803900              <1>  cmp byte[ecx],0
+    38 00000055 7405                <1>  je %%skip
+    38 00000057 CD80                <1>  int 80h
+    38 00000059 46                  <1>  inc esi
+    38 0000005A EBE5                <1>  jmp %%for
+    38                              <1> 
+    38                              <1> %%skip:
+    38 0000005C 61                  <1>  popad
+    39                                  	 output newln
+    39 0000005D 60                  <1>  pushad
+    39 0000005E BE[00000000]        <1>  mov esi, %1
+    39                              <1> 
+    39                              <1> %%for:
+    39 00000063 B804000000          <1>  mov eax, 4
+    39 00000068 BB01000000          <1>  mov ebx, 1
+    39 0000006D 89F1                <1>  mov ecx, esi
+    39 0000006F BA01000000          <1>  mov edx, 1
+    39 00000074 803900              <1>  cmp byte[ecx],0
+    39 00000077 7405                <1>  je %%skip
+    39 00000079 CD80                <1>  int 80h
+    39 0000007B 46                  <1>  inc esi
+    39 0000007C EBE5                <1>  jmp %%for
+    39                              <1> 
+    39                              <1> %%skip:
+    39 0000007E 61                  <1>  popad
+    40                                  	 input string ,10
+    40 0000007F 60                  <1>  PUSHAD
+    40 00000080 9C                  <1>  PUSHF
+    40 00000081 B803000000          <1>  MOV EAX,3
+    40 00000086 BB00000000          <1>  MOV EBX,0
+    40 0000008B B9[03000000]        <1>  MOV ECX,%1
+    40 00000090 BA0A000000          <1>  MOV EDX,%2
+    40 00000095 CD80                <1>  INT 0X80
+    40 00000097 48                  <1>  DEC EAX
+    40                              <1> 
+    40 00000098 C6040100            <1>  MOV BYTE[ECX+EAX], 0
+    40 0000009C 9D                  <1>  POPF
+    40 0000009D 61                  <1>  POPAD
+    41 0000009E 83C304                  	 add   ebx , 4
+    42                                  
+    43 000000A1 C783[00000000]-         	 mov   dword[arr+ebx],string
+    43 000000A7 [03000000]         
+    44                                  	 output dword[arr+ebx]
+    44 000000AB 60                  <1>  pushad
+    44 000000AC 8BB3[00000000]      <1>  mov esi, %1
+    44                              <1> 
+    44                              <1> %%for:
+    44 000000B2 B804000000          <1>  mov eax, 4
+    44 000000B7 BB01000000          <1>  mov ebx, 1
+    44 000000BC 89F1                <1>  mov ecx, esi
+    44 000000BE BA01000000          <1>  mov edx, 1
+    44 000000C3 803900              <1>  cmp byte[ecx],0
+    44 000000C6 7405                <1>  je %%skip
+    44 000000C8 CD80                <1>  int 80h
+    44 000000CA 46                  <1>  inc esi
+    44 000000CB EBE5                <1>  jmp %%for
+    44                              <1> 
+    44                              <1> %%skip:
+    44 000000CD 61                  <1>  popad
+    45                                  
+    46 000000CE C3                         ret
